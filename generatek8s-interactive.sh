@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="${1:-.}"
-TAG="${2:-latest}"
+TAG=$(printf "%05d" $((RANDOM % 100000)))
 PARENT_NAME="$(basename "$(realpath "$ROOT_DIR")")"
 K8S_OUT_DIR="$ROOT_DIR/k8s-manifests"
 
@@ -323,38 +323,8 @@ for FILE in "${DOCKERFILES[@]}"; do
 
   # In your script, modify the deployment generation section:
 
-if [[ "$DIR_NAME" == "cli" ]]; then
-  # For CLI, run a health check command instead of the interactive CLI
-  cat > "$K8S_OUT_DIR/${DIR_NAME}-deployment.yaml" <<EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: $DEPLOY_NAME
-  namespace: $NAMESPACE
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ${PARENT_NAME}-${DIR_NAME}
-  template:
-    metadata:
-      labels:
-        app: ${PARENT_NAME}-${DIR_NAME}
-    spec:
-      containers:
-      - name: ${DIR_NAME}
-        image: $IMAGE_NAME
-        imagePullPolicy: IfNotPresent
-        command: ["python"]
-        args: ["-c", "print('CLI service is healthy'); import sys; sys.exit(0)"]
-        envFrom:
-        - configMapRef:
-            name: ${PARENT_NAME}-config
-        - secretRef:
-            name: ${PARENT_NAME}-secret
-EOF
-else
-  # Regular deployment for web services
+
+   # Regular deployment for web services
   cat > "$K8S_OUT_DIR/${DIR_NAME}-deployment.yaml" <<EOF
 apiVersion: apps/v1
 kind: Deployment
@@ -397,7 +367,7 @@ spec:
           periodSeconds: 10
           failureThreshold: 3
 EOF
-fi
+
 
   cat > "$K8S_OUT_DIR/${DIR_NAME}-service.yaml" <<EOF
 apiVersion: v1
